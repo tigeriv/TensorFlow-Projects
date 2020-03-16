@@ -15,7 +15,7 @@ class LeNet:
             self.X = tf.placeholder(tf.float32, (None, 32, 32, 3))
             self.labels = tf.placeholder(tf.int32, (None,))
         self.training = True
-        self.predictions, self.cost, self.loss, self.train_op, self.init = self.make_graph(learning_rate)
+        self.predictions, self.cost, self.loss, self.train_op, self.init, self.optimizer = self.make_graph(learning_rate)
 
     def make_graph(self, learning_rate):
         with self.graph.as_default():
@@ -60,4 +60,4 @@ class LeNet:
             optimizer = tf.train.GradientDescentOptimizer(learning_rate)
             train_op = optimizer.minimize(loss)
             init = tf.global_variables_initializer()
-        return predictions, cost, loss, train_op, init
+        return predictions, cost, loss, train_op, init, optimizer
