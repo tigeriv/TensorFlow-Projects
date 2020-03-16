@@ -6,9 +6,9 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-BATCH_SIZE = 1024
+BATCH_SIZE = 128
 NUM_EPOCHS = 500
-LEARNING_RATE = 0.0007
+LEARNING_RATE = 0.007
 training = True
 
 
@@ -46,7 +46,6 @@ if __name__ == "__main__":
 
     test_x = np.reshape(test_data, (len(test_labels), 32, 32, 3))
     test_y = test_labels
-
 
     # Make graph
     tf.reset_default_graph()
@@ -90,7 +89,7 @@ if __name__ == "__main__":
         cost = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=predictions, labels=labels)
         loss = tf.reduce_mean(cost)
 
-        optimizer = tf.train.AdamOptimizer(LEARNING_RATE)
+        optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE)
         train_op = optimizer.minimize(loss)
         init = tf.global_variables_initializer()
 
