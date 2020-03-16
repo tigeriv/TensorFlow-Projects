@@ -22,7 +22,9 @@ def unpickle(file):
 
 if __name__ == "__main__":
     # Obtain train and test data
-    train_files = ["cifar-10-batches-py/data_batch_1", "cifar-10-batches-py/data_batch_2", "cifar-10-batches-py/data_batch_3"]
+    train_files = ["cifar-10-batches-py/data_batch_1", "cifar-10-batches-py/data_batch_2",
+                   "cifar-10-batches-py/data_batch_3", "cifar-10-batches-py/data_batch_4",
+                   "cifar-10-batches-py/data_batch_5"]
     train_labels, train_data = [], -1
     first_time = True
     for file in train_files:
@@ -100,13 +102,9 @@ if __name__ == "__main__":
             avg_loss = 0
             training = True
             while pos < len(train_labels):
-                try:
-                    batch_x = train_data[pos:pos + BATCH_SIZE]
-                    batch_y = train_labels[pos:pos+BATCH_SIZE]
-                    feed_dict = {X: batch_x, labels: batch_y}
-                except:
-                    pos = 10000
-                    continue
+                batch_x = train_data[pos:pos + BATCH_SIZE]
+                batch_y = train_labels[pos:pos+BATCH_SIZE]
+                feed_dict = {X: batch_x, labels: batch_y}
 
                 if pos == -1:
                     var_list = (variables.trainable_variables() + ops.get_collection(
