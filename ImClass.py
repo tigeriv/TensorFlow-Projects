@@ -22,18 +22,20 @@ def unpickle(file):
 
 if __name__ == "__main__":
     # Obtain train and test data
-    train_files = ["cifar-10-batches-py/data_batch_1"]
+    train_files = ["cifar-10-batches-py/data_batch_1", "cifar-10-batches-py/data_batch_2", "cifar-10-batches-py/data_batch_3"]
     train_labels, train_data = [], -1
+    first_time = True
     for file in train_files:
         train_dict = unpickle(file)
         _, temp_labels, temp_data, _ = train_dict[b"batch_label"], train_dict[b"labels"], train_dict[b"data"], \
                                          train_dict[b"filenames"]
         temp_labels, temp_data = temp_labels, temp_data
         train_labels += temp_labels
-        if train_data == -1:
+        if first_time:
             train_data = temp_data
+            first_time = False
         else:
-            train_data = np.concatenate(train_data, temp_data, axis=0)
+            train_data = np.concatenate([train_data, temp_data], axis=0)
     train_data = np.reshape(train_data, (len(train_labels), 32, 32, 3))
 
     test_dict = unpickle("cifar-10-batches-py/test_batch")
