@@ -101,9 +101,12 @@ if __name__ == "__main__":
             pos = 0
             avg_loss = 0
             training = True
+            # Randomly select indices
+            rand_indices = np.arange(len(train_labels))
             while pos < len(train_labels):
-                batch_x = train_data[pos:pos + BATCH_SIZE]
-                batch_y = train_labels[pos:pos+BATCH_SIZE]
+                batch_indices = rand_indices[pos:pos+BATCH_SIZE]
+                batch_x = train_data[batch_indices]
+                batch_y = [train_labels[i] for i in batch_indices]
                 feed_dict = {X: batch_x, labels: batch_y}
 
                 if pos == -1:
