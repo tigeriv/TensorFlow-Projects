@@ -8,9 +8,9 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-BATCH_SIZE = 128
-NUM_EPOCHS = 500
-LEARNING_RATE = 0.007
+BATCH_SIZE = 2048
+NUM_EPOCHS = 5000
+LEARNING_RATE = 0.07
 DEBUG = False
 
 

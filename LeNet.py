@@ -26,6 +26,7 @@ class LeNet:
                 bias1 = tf.get_variable('bias1', shape=(6,), initializer=tf.zeros_initializer())
                 X1 = tf.nn.conv2d(self.X, filters1, strides=1, padding="VALID")
                 X1 = tf.nn.bias_add(X1, bias1)
+                X1 = tf.layers.batch_normalization(X1)
                 X1 = tf.nn.leaky_relu(X1)
                 X1 = tf.nn.avg_pool2d(X1, ksize=2, strides=2, padding="VALID")
             with tf.name_scope("conv2"):
@@ -34,17 +35,22 @@ class LeNet:
                 bias2 = tf.get_variable('bias2', shape=(16,), initializer=tf.zeros_initializer())
                 X2 = tf.nn.conv2d(X1, filters2, strides=1, padding="VALID")
                 X2 = tf.nn.bias_add(X2, bias2)
+                X2 = tf.layers.batch_normalization(X2)
                 X2 = tf.nn.leaky_relu(X2)
                 X2 = tf.nn.avg_pool2d(X2, ksize=2, strides=2, padding="VALID")
                 X2 = tf.layers.flatten(X2)
             with tf.name_scope("fcn1"):
                 W1 = tf.get_variable('W1', shape=(400, 120), initializer=tf.keras.initializers.glorot_normal())
                 b1 = tf.Variable(tf.zeros((120,)), trainable=True)
-                X3 = tf.nn.leaky_relu(tf.matmul(X2, W1) + b1)
+                X3 = tf.matmul(X2, W1) + b1
+                X3 = tf.layers.batch_normalization(X3)
+                X3 = tf.nn.leaky_relu(X3)
             with tf.name_scope("fcn2"):
                 W2 = tf.get_variable('W2', shape=(120, 84), initializer=tf.keras.initializers.glorot_normal())
                 b2 = tf.Variable(tf.zeros((84,)), trainable=True)
-                X4 = tf.nn.leaky_relu(tf.matmul(X3, W2) + b2)
+                X4 = tf.matmul(X3, W2) + b2
+                X4 = tf.layers.batch_normalization(X4)
+                X4 = tf.nn.leaky_relu(X4)
             with tf.name_scope("softmax"):
                 W3 = tf.get_variable('W3', shape=(84, 10), initializer=tf.keras.initializers.glorot_normal())
                 b3 = tf.Variable(tf.zeros((10,)), trainable=True)
