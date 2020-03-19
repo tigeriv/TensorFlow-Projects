@@ -63,7 +63,10 @@ class LeNet:
             cost = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=predictions, labels=self.labels)
             loss = tf.reduce_mean(cost)
 
-            optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+            optimizer = tf.train.MomentumOptimizer(learning_rate, 0.9)
             train_op = optimizer.minimize(loss)
             init = tf.global_variables_initializer()
         return predictions, cost, loss, train_op, init, optimizer
+
+    def get_size(self):
+        return 32, 32, 3

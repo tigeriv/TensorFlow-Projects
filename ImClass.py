@@ -1,5 +1,6 @@
 from LeNet import LeNet
 from cifar10 import Cifar10
+from ImageAugmentation import ImageAugmentation
 from tensorflow.python.ops import variables
 from tensorflow.python.framework import ops
 import pickle
@@ -8,9 +9,9 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-BATCH_SIZE = 2048
+BATCH_SIZE = 1024
 NUM_EPOCHS = 5000
-LEARNING_RATE = 0.07
+LEARNING_RATE = 0.001
 DEBUG = False
 
 
@@ -36,6 +37,7 @@ def debug_grads(sess, model, feed_dict):
 if __name__ == "__main__":
     model = LeNet(LEARNING_RATE)
     data = Cifar10()
+    modifier = ImageAugmentation()
 
     with tf.Session(graph=model.graph) as sess:
         model.init.run()
@@ -48,6 +50,8 @@ if __name__ == "__main__":
 
             while data.pos < data.N:
                 batch_x, batch_y = data.get_batch(BATCH_SIZE)
+                batch_x = modifier.fit_batch(batch_x, model.get_size())
+                batch_x = modifier.augment_batch(batch_x)
                 feed_dict = {model.X: batch_x, model.labels: batch_y}
                 if DEBUG:
                     debug_grads(sess, model, feed_dict)
