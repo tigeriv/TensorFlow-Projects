@@ -1,4 +1,5 @@
 from LeNet import LeNet
+from AlexNet import AlexNet
 from cifar10 import Cifar10
 from ImageAugmentation import ImageAugmentation
 from tensorflow.python.ops import variables
@@ -9,7 +10,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-BATCH_SIZE = 1024
+BATCH_SIZE = 4096
 NUM_EPOCHS = 5000
 LEARNING_RATE = 0.001
 DEBUG = False
@@ -35,7 +36,7 @@ def debug_grads(sess, model, feed_dict):
 
 
 if __name__ == "__main__":
-    model = LeNet(LEARNING_RATE)
+    model = AlexNet(LEARNING_RATE)
     data = Cifar10()
     modifier = ImageAugmentation()
 
@@ -60,7 +61,7 @@ if __name__ == "__main__":
 
             # Accuracy on Test Set
             model.Training = False
-            feed_dict = {model.X: data.train_data, model.labels: data.train_labels}
+            feed_dict = {model.X: modifier.fit_batch(data.test_data, model.get_size()), model.labels: data.test_labels}
             test_outs, test_labs = sess.run([model.predictions, model.labels], feed_dict=feed_dict)
             test_preds = np.argmax(test_outs, axis=1)
             accuracy = 100.0 * np.sum(np.equal(test_labs, test_preds))/len(test_labs)
