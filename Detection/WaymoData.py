@@ -6,16 +6,13 @@ from waymo_open_dataset.utils import transform_utils
 from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
 
-import os
-import csv
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
-import math
+
 import numpy as np
-import itertools
 import glob
 import cv2
 
@@ -81,7 +78,6 @@ class WaymoData:
             c_x, c_y, h, w = label
             start_x = int(c_x - (w/2))
             start_y = (c_y - (h/2))
-            print(image.shape, c_x, c_y, w, h)
             rect = patches.Rectangle((start_x, start_y), w, h, linewidth=1, edgecolor='r', fill=False)
             ax.add_patch(rect)
         plt.show()
@@ -103,17 +99,15 @@ class WaymoData:
                 frame[camera_name] = [new_image, labels, types]
 
 
-
-waymo_data = WaymoData()
-new_batch = waymo_data.get_batch()
-while new_batch is not None:
-    waymo_data.show_image(new_batch[0][1][0], new_batch[0][1][1])
-
-    waymo_data.make_images_uniform(new_batch)
-    waymo_data.show_image(new_batch[0][1][0], new_batch[0][1][1])
-
+# Test program
+if __name__ == "__main__":
+    waymo_data = WaymoData()
     new_batch = waymo_data.get_batch()
-exit()
+    while new_batch is not None:
+        for frame in new_batch:
+            for image, labels, types in frame.values():
+                waymo_data.show_image(image, labels)
+        new_batch = waymo_data.get_batch()
 
 
 data_list = []
