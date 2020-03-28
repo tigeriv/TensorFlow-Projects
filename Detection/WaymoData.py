@@ -40,11 +40,16 @@ class WaymoData:
     # Return None and create new DataSet if no more batches
     def get_batch(self):
         try:
-            return next(self.iter)
+            new_batch = next(self.iter)
+            batch_data = self.batch_to_data(new_batch)
+            return batch_data
         except StopIteration:
             self.make_set()
             return None
 
+    # Data is a list (batch) of dicts
+    # Dict keys are cameras
+    # Data in dict is a list of [image, [boxes], [types]]
     def batch_to_data(self, batch):
         batch_data = []
         for data in batch:
@@ -52,22 +57,22 @@ class WaymoData:
             frame.ParseFromString(bytearray(data.numpy()))
             cam_dict = {}
             for camera in frame.images:
-                image = tf.image.decode_jpeg(camera.image)
-                cam_dict[camera.name] = [[image.shape], []]
+                image = (tf.image.decode_jpeg(camera.image)).numpy()
+                cam_dict[camera.name] = [image, [], []]
             for camera in frame.projected_lidar_labels:
                 for label in camera.labels:
-                    label_data = [label.box.center_x, label.box.center_y, label.box.width, label.box.length, label.type]
+                    label_data = [label.box.center_x, label.box.center_y, label.box.width, label.box.length]
                     cam_dict[camera.name][1].append(label_data)
+                    cam_dict[camera.name][2].append(label.type)
             batch_data.append(cam_dict)
         return batch_data
 
+    # Note that while most data is good, some is not
     def show_image(self, image, labels):
-        print(image.shape)
-        exit()
         fig, ax = plt.subplots(1)
         ax.imshow(image)
         for label in labels:
-            c_x, c_y, w, h, __ = label
+            c_x, c_y, h, w = label
             start_x = int(c_x - (w/2))
             start_y = (c_y - (h/2))
             print(image.shape, c_x, c_y, w, h)
@@ -79,11 +84,10 @@ class WaymoData:
 waymo_data = WaymoData()
 new_batch = waymo_data.get_batch()
 while new_batch is not None:
-    waymo_data.batch_to_data(new_batch)
+    for frame in new_batch:
+        for cam in frame.keys():
+            waymo_data.show_image(frame[cam][0], frame[cam][1])
     new_batch = waymo_data.get_batch()
-    fr = new_batch[0]
-    cam = fr[fr.keys()[0]]
-    waymo_data.show_image(cam[0], cam[1])
 exit()
 
 
