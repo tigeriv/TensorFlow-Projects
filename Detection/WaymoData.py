@@ -17,16 +17,19 @@ import math
 import numpy as np
 import itertools
 import glob
+import cv2
 
 tf.enable_eager_execution()
 
 
+# Size is (height, width)
 class WaymoData:
-    def __init__(self, data_loc='./training_0000', batch_size=8):
+    def __init__(self, data_loc='./training_0000', batch_size=8, image_size=(1920, 1920)):
         self.fnames = tf.constant([fname for fname in glob.glob(data_loc + '/segment*')])
         self.batch_size = batch_size
         self.dataset = self.make_set()
         self.iter = iter(self.dataset)
+        self.image_size = image_size
 
     def make_set(self):
         dataset = tf.data.TFRecordDataset(self.fnames)
@@ -42,6 +45,7 @@ class WaymoData:
         try:
             new_batch = next(self.iter)
             batch_data = self.batch_to_data(new_batch)
+            self.make_images_uniform(batch_data)
             return batch_data
         except StopIteration:
             self.make_set()
@@ -50,6 +54,7 @@ class WaymoData:
     # Data is a list (batch) of dicts
     # Dict keys are cameras
     # Data in dict is a list of [image, [boxes], [types]]
+    # Label data actually goes [center_x, center_y, height, width] of box
     def batch_to_data(self, batch):
         batch_data = []
         for data in batch:
@@ -64,6 +69,7 @@ class WaymoData:
                     label_data = [label.box.center_x, label.box.center_y, label.box.width, label.box.length]
                     cam_dict[camera.name][1].append(label_data)
                     cam_dict[camera.name][2].append(label.type)
+                cam_dict[camera.name][1] = np.array(cam_dict[camera.name][1])
             batch_data.append(cam_dict)
         return batch_data
 
@@ -80,13 +86,32 @@ class WaymoData:
             ax.add_patch(rect)
         plt.show()
 
+    # Adjusts image to the size the class is set to handle
+    # Also changes bounding boxes
+    def make_images_uniform(self, batch):
+        for frame in batch:
+            for camera_name in frame.keys():
+                image, labels, types = frame[camera_name]
+                new_image = cv2.resize(image, (self.image_size[1], self.image_size[0]), interpolation=cv2.INTER_AREA)
+                height_scale = new_image.shape[0]/image.shape[0]
+                width_scale = new_image.shape[1]/image.shape[1]
+                try:
+                    labels *= [width_scale, height_scale, height_scale, width_scale]
+                except ValueError:
+                    # No boxes
+                    pass
+                frame[camera_name] = [new_image, labels, types]
+
+
 
 waymo_data = WaymoData()
 new_batch = waymo_data.get_batch()
 while new_batch is not None:
-    for frame in new_batch:
-        for cam in frame.keys():
-            waymo_data.show_image(frame[cam][0], frame[cam][1])
+    waymo_data.show_image(new_batch[0][1][0], new_batch[0][1][1])
+
+    waymo_data.make_images_uniform(new_batch)
+    waymo_data.show_image(new_batch[0][1][0], new_batch[0][1][1])
+
     new_batch = waymo_data.get_batch()
 exit()
 
