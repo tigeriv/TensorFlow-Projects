@@ -1,9 +1,14 @@
 import cv2
 import scipy.io
 import numpy as np
+from WaymoData import WaymoData
+import selective_search
+
 
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
+
+tf.enable_eager_execution()
 
 
 class RCNN:
@@ -15,7 +20,8 @@ class RCNN:
             self.X = tf.placeholder(tf.float32, (None, shape[0], shape[1], 3))
             self.labels = tf.placeholder(tf.int32, (None, None, 4))
         self.training = True
-        self.predictions, self.cost, self.loss, self.train_op, self.init, self.optimizer = self.make_graph(learning_rate)
+        self.init, self.features, self.batch_rects = self.make_graph(learning_rate)
+        self.batch_size = -1
 
     # Load Feature Encoder
     # Output features are (batch, 60, 60, 512) for a 1920 x 1920 image
@@ -72,14 +78,24 @@ class RCNN:
 
         return avgpool5
 
-    # The Region Proposal Portion
     def make_graph(self, learning_rate):
         with self.graph.as_default():
+
+            # Extract features, a None x 60 x 60 x 512 feature map
             with tf.name_scope("vgg"):
                 features = self.load_vgg()
-        return -1, -1, -1, -1, -1, -1
+
+            init = tf.global_variables_initializer()
+        return init, features
 
 
 # Test program
 if __name__ == "__main__":
     rcnn = RCNN()
+    waymo_data = WaymoData()
+    with tf.Session(graph=rcnn.graph) as sess:
+        rcnn.init.run()
+        feed_dict = {rcnn.X: new_batch[0]}
+        # Obtain features
+        features, batch_rects = sess.run(rcnn.features, rcnn.batch_rects, feed_dict=feed_dict)
+        print(batch_rects)

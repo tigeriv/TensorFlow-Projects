@@ -43,10 +43,22 @@ class WaymoData:
             new_batch = next(self.iter)
             batch_data = self.batch_to_data(new_batch)
             self.make_images_uniform(batch_data)
-            return batch_data
+            return self.combine_cameras(batch_data)
         except StopIteration:
             self.make_set()
             return None
+
+    # Remove separation between frames
+    def combine_cameras(self, batch):
+        all_labels = []
+        all_images = []
+        all_types = []
+        for frame in batch:
+            for image, labels, types in frame.values():
+                all_labels.append(labels)
+                all_images.append(image)
+                all_types.append(types)
+        return [all_images, all_labels, all_types]
 
     # Data is a list (batch) of dicts
     # Dict keys are cameras
