@@ -353,7 +353,7 @@ conv_predictions = np.copy(longer_train)
 conv_predictions[:, 3] = new_dates
 
 # Save predictions as a file
-my_columns = ["ForecastId", "Country_Region", "Province_State", "Date", "ProjectedCases", "Fatalities"]
+my_columns = ["ForecastId", "Province_State", "Country_Region", "Date", "ProjectedCases", "Fatalities"]
 outputs = conv_predictions[:, [0, 1, 2, 3, 4, 5]]
 df = pd.DataFrame(outputs, columns=my_columns)
 df.to_csv('predictions.csv', index=False)
