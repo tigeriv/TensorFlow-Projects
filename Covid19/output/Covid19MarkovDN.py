@@ -17,9 +17,6 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ML libraries
-import lightgbm as lgb
-import xgboost as xgb
-from xgboost import plot_importance, plot_tree
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error
@@ -256,9 +253,9 @@ save_freq = 100
 DEBUG = False
 learning_rate = 0.001
 restore = False
-save = False
+save = True
 load_path = "../input/pretrained-covid19/model.ckpt"
-batch_size = 1024
+batch_size = 64
 test_size = 0.01
 
 # SKLearn scalers
@@ -289,8 +286,8 @@ with tf.Session(graph=graph) as sess:
         while batch_index < len(train_indices) - batch_size:
             batch_indices = train_indices[batch_index: batch_index + batch_size]
             batch_index += batch_size
-            batch_x = transformed_x[train_indices]
-            batch_y = train_y[train_indices]
+            batch_x = transformed_x[batch_indices]
+            batch_y = train_y[batch_indices]
 
             if DEBUG:
                 debug_grads(sess, feed_dict)
@@ -304,9 +301,8 @@ with tf.Session(graph=graph) as sess:
         cv_y = train_y[cv_indices]
         cv_x = x_scaler.transform(cv_x)
         feed_dict = {X: cv_x, labels: cv_y}
-        cv_loss, outs = sess.run([loss, predictions], feed_dict=feed_dict)[0]
-        print(epoch, "Avg Train Loss", avg_loss / (batch_index / batch_size), "Avg CV Loss", len(cv_indices))
-        print(outs, cv_y)
+        cv_loss, outs = sess.run([loss, predictions], feed_dict=feed_dict)
+        print(epoch, "Avg Train Loss", avg_loss / (batch_index / batch_size), "Avg CV Loss", cv_loss)
 
         # Save
         if save and (epoch % save_freq == 0):
