@@ -242,10 +242,10 @@ with graph.as_default():
 
 # Train
 
-NUM_EPOCHS = 50
+NUM_EPOCHS = 10000
 save_freq = 100
 DEBUG = False
-learning_rate = 0.007
+learning_rate = 0.1
 restore = False
 save = True
 
