@@ -200,7 +200,7 @@ def debug_grads(sess, feed_dict):
 tf.reset_default_graph()
 graph = tf.Graph()
 
-learning_rate = 0.001
+learning_rate = 0.07
 NUM_FEATURES = train_x.shape[1]
 
 with graph.as_default():
@@ -250,7 +250,7 @@ with graph.as_default():
 NUM_EPOCHS = 25000
 save_freq = 100
 DEBUG = False
-learning_rate = 0.001
+learning_rate = 0.07
 restore = False
 save = True
 load_path = "../input/pretrained-covid19/model.ckpt"
