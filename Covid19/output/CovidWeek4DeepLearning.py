@@ -34,9 +34,11 @@ from fancyimpute import KNN
 # For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
 
 import os
-for dirname, _, filenames in os.walk('../input'):
+for dirname, _, filenames in os.walk('/kaggle/input'):
     for filename in filenames:
         print(os.path.join(dirname, filename))
+
+# Any results you write to the current directory are saved as output.
 
 
 # Helper functions for managing the data
@@ -232,64 +234,74 @@ with graph.as_default():
         W5 = tf.get_variable('W5', shape=(10, 2), initializer=tf.keras.initializers.glorot_normal())
         b5 = tf.Variable(tf.zeros((2,)), trainable=True)
         predictions = tf.add(tf.matmul(X4, W5), b5)
-    loss = tf.losses.mean_squared_error(labels, predictions)
+        predictions = tf.nn.relu(predictions)
+    loss = tf.losses.huber_loss(labels, predictions)
     # loss = tf.math.sqrt(tf.math.reduce_mean(tf.math.square(tf.compat.v1.losses.log_loss(labels, predictions))))
 
-    optimizer = tf.train.AdagradOptimizer(learning_rate)
+    optimizer = tf.train.AdamOptimizer(learning_rate)
     train_op = optimizer.minimize(loss)
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
 
 # Train
 
-NUM_EPOCHS = 10000
+# Train
+
+NUM_EPOCHS = 25000
 save_freq = 100
 DEBUG = False
-learning_rate = 0.1
+learning_rate = 0.001
 restore = False
 save = True
+load_path = "../input/pretrained-covid19/model.ckpt"
+batch_size = 64
+test_size = 0.01
 
 # SKLearn scalers
 x_scaler = StandardScaler()
 x_scaler.fit(train_x)
 y_scaler = StandardScaler()
 y_scaler.fit(train_y)
-
-# K Fold CV
-kf = KFold(n_splits=10, shuffle=True)
+transformed_x = x_scaler.transform(train_x)
+transformed_y = y_scaler.transform(train_y)
 
 with tf.Session(graph=graph) as sess:
     if restore:
-        saver.restore(sess, "tmp/model.ckpt")
+        saver.restore(sess, load_path)
         NUM_EPOCHS = 0
     else:
         init.run()
 
+    indices = [i for i in range(len(train_x))]
     for epoch in range(NUM_EPOCHS):
+        # Shuffle and split data set
+        np.random.shuffle(indices)
+        split_index = int((1 - test_size) * (len(indices)))
+        train_indices = indices[:split_index]
+        cv_indices = indices[split_index:]
+        # Initialize some variables
         avg_loss = 0
-        kf.get_n_splits(train_x)
-        for train_indices, cv_indices in kf.split(train_x):
-            batch_x = train_x[train_indices]
-            batch_y = train_y[train_indices]
-            standardized_x = x_scaler.transform(batch_x)
-            standardized_y = y_scaler.transform(batch_y)
+        batch_index = 0
 
-            cv_x = train_x[cv_indices]
-            cv_y = train_y[cv_indices]
-            cv_x = x_scaler.transform(cv_x)
-            cv_y = y_scaler.transform(cv_y)
-            cv_length = len(cv_indices)
+        # Mini batches
+        while batch_index < len(train_indices) - batch_size:
+            batch_indices = train_indices[batch_index: batch_index + batch_size]
+            batch_x = transformed_x[batch_indices]
+            batch_y = transformed_y[batch_indices]
+            batch_index += batch_size
 
             if DEBUG:
                 debug_grads(sess, feed_dict)
 
-            feed_dict = {X: standardized_x, labels: standardized_y}
+            feed_dict = {X: batch_x, labels: batch_y}
             _, loss_val, outs = sess.run([train_op, loss, predictions], feed_dict=feed_dict)
             avg_loss += loss_val
 
+        cv_x = transformed_x[cv_indices]
+        cv_y = transformed_y[cv_indices]
         feed_dict = {X: cv_x, labels: cv_y}
         cv_loss = sess.run([loss], feed_dict=feed_dict)[0]
-        print(epoch, "Avg Train Loss", avg_loss / (len(train_x) - cv_length), "Avg CV Loss", cv_loss / len(cv_indices))
+        print(epoch, "Avg Train Loss", avg_loss / batch_index, "Avg CV Loss", cv_loss / len(cv_indices))
 
         # Save
         if save and (epoch % save_freq == 0):
@@ -297,10 +309,9 @@ with tf.Session(graph=graph) as sess:
             save_path = saver.save(sess, save_str)
 
     # Save final weights
-    if save:
-        save_path = saver.save(sess, "tmp/model.ckpt")
+    save_path = saver.save(sess, "tmp/model.ckpt")
 
-days_to_extend = 50
+days_to_extend = 60
 
 
 def row_to_nn(row, prev_day_data):
