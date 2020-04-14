@@ -16,3 +16,6 @@ Classification/cifar-10-batches-py/data_batch_4
 Classification/cifar-10-batches-py/data_batch_5
 *.iml
 *.xml
+*.json
+*.png
+*.zip
