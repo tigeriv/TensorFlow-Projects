@@ -197,6 +197,15 @@ def debug_grads(sess, feed_dict):
 
 # Create graph
 
+def fcn(num_in, num_out, X, name):
+    with tf.name_scope(name):
+        W = tf.get_variable(name + 'W', shape=(num_in, num_out), initializer=tf.keras.initializers.glorot_normal())
+        b = tf.Variable(tf.zeros((num_out,)), trainable=True)
+        X = tf.add(tf.matmul(X, W), b)
+        X = tf.layers.batch_normalization(X)
+        X = tf.nn.leaky_relu(X)
+    return X
+
 tf.reset_default_graph()
 graph = tf.Graph()
 
@@ -206,37 +215,17 @@ NUM_FEATURES = train_x.shape[1]
 with graph.as_default():
     X = tf.placeholder(tf.float32, (None, NUM_FEATURES))
     labels = tf.placeholder(tf.float32, (None, 2))
-    with tf.name_scope("fcn1"):
-        W1 = tf.get_variable('W1', shape=(NUM_FEATURES, 500), initializer=tf.keras.initializers.glorot_normal())
-        b1 = tf.Variable(tf.zeros((500,)), trainable=True)
-        X1 = tf.add(tf.matmul(X, W1), b1)
-        X1 = tf.layers.batch_normalization(X1)
-        X1 = tf.nn.leaky_relu(X1)
-    with tf.name_scope("fcn2"):
-        W2 = tf.get_variable('W2', shape=(500, 500), initializer=tf.keras.initializers.glorot_normal())
-        b2 = tf.Variable(tf.zeros((500,)), trainable=True)
-        X2 = tf.add(tf.matmul(X1, W2), b2)
-        X2 = tf.layers.batch_normalization(X2)
-        X2 = tf.nn.leaky_relu(X2)
-    with tf.name_scope("fcn3"):
-        W3 = tf.get_variable('W3', shape=(500, 100), initializer=tf.keras.initializers.glorot_normal())
-        b3 = tf.Variable(tf.zeros((100,)), trainable=True)
-        X3 = tf.add(tf.matmul(X2, W3), b3)
-        X3 = tf.layers.batch_normalization(X3)
-        X3 = tf.nn.leaky_relu(X3)
-    with tf.name_scope("fcn4"):
-        W4 = tf.get_variable('W4', shape=(100, 10), initializer=tf.keras.initializers.glorot_normal())
-        b4 = tf.Variable(tf.zeros((10,)), trainable=True)
-        X4 = tf.add(tf.matmul(X3, W4), b4)
-        X4 = tf.layers.batch_normalization(X4)
-        X4 = tf.nn.leaky_relu(X4)
-    with tf.name_scope("fcn5"):
-        W5 = tf.get_variable('W5', shape=(10, 2), initializer=tf.keras.initializers.glorot_normal())
-        b5 = tf.Variable(tf.zeros((2,)), trainable=True)
-        predictions = tf.add(tf.matmul(X4, W5), b5)
-        predictions = tf.nn.relu(predictions)
+    X_es = [X]
+    for i in range(10):
+        num_in = 150
+        num_out = 150
+        if i == 0:
+            num_in = NUM_FEATURES
+        if i == 9:
+            num_out = 2
+        X_es.append(fcn(num_in, num_out, X_es[-1], "fcn" + str(i)))
+    predictions = X_es[-1]
     loss = tf.losses.huber_loss(labels, predictions)
-    # loss = tf.math.sqrt(tf.math.reduce_mean(tf.math.square(tf.compat.v1.losses.log_loss(labels, predictions))))
 
     optimizer = tf.train.AdamOptimizer(learning_rate)
     train_op = optimizer.minimize(loss)
