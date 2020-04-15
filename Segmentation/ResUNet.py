@@ -1,6 +1,8 @@
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
+layer_sizes = [16, 32, 64, 128]
+
 
 def bn_relu(X):
     X = tf.layers.batch_normalization(X)
@@ -64,36 +66,36 @@ class ResUNet:
 
             # Residual unit encoding
             # 64 depth
-            X1 = res_unit(64, self.depth, self.X, first_layer=True, stride=1, name="Enc1")
+            X1 = res_unit(layer_sizes[0], self.depth, self.X, first_layer=True, stride=1, name="Enc1")
             # 1/2 size, 128 depth
-            X2 = res_unit(128, 64, X1, name="Enc2")
+            X2 = res_unit(layer_sizes[1], layer_sizes[0], X1, name="Enc2")
             # 1/4 size, 256 depth
-            X3 = res_unit(256, 128, X2, name="Enc3")
+            X3 = res_unit(layer_sizes[2], layer_sizes[1], X2, name="Enc3")
 
             # Bridge
             # 1/8 size, 512 depth
-            X_bridge = res_unit(512, 256, X3, name="Bridge")
+            X_bridge = res_unit(layer_sizes[3], layer_sizes[2], X3, name="Bridge")
 
             # Decode
             # (512 + 256) input depth
             X_D3 = upsample(X_bridge, X3)
             # 1/4 size, 256 depth
-            X_D3 = res_unit(256, (512 + 256), X_D3, stride=1, name="Dec1")
+            X_D3 = res_unit(layer_sizes[2], (layer_sizes[2] + layer_sizes[3]), X_D3, stride=1, name="Dec1")
             # (256 + 128) input depth
             X_D2 = upsample(X_D3, X2)
             # 1/2 size, 128 depth
-            X_D2 = res_unit(128, (256 + 128), X_D2, stride=1, name="Dec2")
+            X_D2 = res_unit(layer_sizes[1], (layer_sizes[1] + layer_sizes[2]), X_D2, stride=1, name="Dec2")
             # (128 + 64) input depth
             X_D1 = upsample(X_D2, X1)
             # 64 depth
-            X_D1 = res_unit(64, (128 + 64), X_D1, stride=1, name="Dec3")
+            X_D1 = res_unit(layer_sizes[0], (layer_sizes[0] + layer_sizes[1]), X_D1, stride=1, name="Dec3")
 
             # Make pixel-wise predictions
-            predictions = convolve(X_D1, 64, self.num_classes, 1, "Predictions", size=1)
+            predictions = convolve(X_D1, layer_sizes[0], self.num_classes, 1, "Predictions", size=1)
             cost = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=predictions, labels=self.labels)
             loss = tf.reduce_mean(cost)
 
-            optimizer = tf.train.MomentumOptimizer(learning_rate, 0.9)
+            optimizer = tf.train.AdamOptimizer(learning_rate)
             train_op = optimizer.minimize(loss)
             init = tf.global_variables_initializer()
             saver = tf.train.Saver()

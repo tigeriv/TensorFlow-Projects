@@ -7,16 +7,15 @@ import time
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-NUM_EPOCHS = 25000
-save_freq = 100
+NUM_EPOCHS = 100
+save_freq = 10
 DEBUG = False
-learning_rate = 0.007
 restore = False
 save = True
 load_path = "./pretrained/model.ckpt"
-batch_size = 32
+batch_size = 1
 test_size = 0.01
-LEARNING_RATE = 0.007
+LEARNING_RATE = 0.07
 
 
 def debug_grads(sess, model, feed_dict):
@@ -55,7 +54,7 @@ if __name__ == "__main__":
 
             # Mini batches
             while not data.EndOfData:
-                batch_x, batch_y = data.get_batch()
+                batch_x, batch_y = data.get_batch(batch_size)
 
                 if DEBUG:
                     debug_grads(sess, feed_dict)
