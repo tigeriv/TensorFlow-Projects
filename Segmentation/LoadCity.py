@@ -55,6 +55,7 @@ def id_to_cat(image):
     for row_num in range(len(image)):
         for ind_num in range(len(image[row_num])):
             image[row_num][ind_num] = labels[image[row_num][ind_num]].catId
+    return image
 
 
 def extract_file_name(file):
@@ -113,12 +114,12 @@ class CityScapes:
         if self.pos >= len(self.train_files):
             self.EndOfData = True
         batch_x = np.asarray([imageio.imread(data_extension(file)) for file in batch_files])
-        batch_y = np.asarray([imageio.imread(label_extension(file)) for file in batch_files])
+        batch_y = np.asarray([id_to_cat(imageio.imread(label_extension(file))) for file in batch_files])
         return batch_x, batch_y
 
     def get_val_data(self):
         val_x = np.asarray([imageio.imread(data_extension(file)) for file in self.val_files])
-        val_y = np.asarray([imageio.imread(label_extension(file)) for file in self.val_files])
+        val_y = np.asarray([id_to_cat(imageio.imread(label_extension(file))) for file in self.val_files])
         return val_x, val_y
 
     def reset_pos(self):
