@@ -206,6 +206,7 @@ def fcn(num_in, num_out, X, name):
         X = tf.nn.leaky_relu(X)
     return X
 
+
 tf.reset_default_graph()
 graph = tf.Graph()
 
@@ -232,7 +233,6 @@ with graph.as_default():
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
 
-# Train
 
 # Train
 

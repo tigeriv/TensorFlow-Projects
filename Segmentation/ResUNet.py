@@ -8,28 +8,28 @@ def bn_relu(X):
     return X
 
 
-def convolve(X, input_channels, num_filters, stride, size=3):
-    filters = tf.get_variable('filters', shape=(size, size, input_channels, num_filters),
+def convolve(X, input_channels, num_filters, stride, name, size=3):
+    filters = tf.get_variable(name + 'filters', shape=(size, size, input_channels, num_filters),
                                initializer=tf.keras.initializers.glorot_normal())
-    bias = tf.get_variable('bias', shape=(num_filters,), initializer=tf.zeros_initializer())
-    X = tf.nn.conv2d(X, filters, strides=stride, padding="VALID")
+    bias = tf.get_variable(name + 'bias', shape=(num_filters,), initializer=tf.zeros_initializer())
+    X = tf.nn.conv2d(X, filters, strides=stride, padding="SAME")
     X = tf.nn.bias_add(X, bias)
     return X
 
 
-def res_unit(num_filters, input_channels, x_in, first_layer=False, stride=2):
+def res_unit(num_filters, input_channels, x_in, first_layer=False, stride=2, name=""):
     # Normalize
     if not first_layer:
         X = bn_relu(x_in)
     else:
         X = x_in
     # 3x3 conv, stride 2 to reduce size by half or 1 to keep same
-    X = convolve(X, input_channels, num_filters, stride)
+    X = convolve(X, input_channels, num_filters, stride, name + "First")
     # Second convolution, stride = 1
     X = bn_relu(X)
-    X = convolve(X, num_filters, num_filters, 1)
+    X = convolve(X, num_filters, num_filters, 1, name + "Sec")
     # Short cut input by 1x1 convoution
-    shortcut = convolve(x_in, input_channels, num_filters, stride, size=1)
+    shortcut = convolve(x_in, input_channels, num_filters, stride, name + "Short", size=1)
     shortcut = tf.layers.batch_normalization(shortcut)
     # Combine and return
     return tf.math.add(shortcut, X)
@@ -38,7 +38,7 @@ def res_unit(num_filters, input_channels, x_in, first_layer=False, stride=2):
 # Multiply H, W by 2 and then merge
 def upsample(X, X_skip):
     X = tf.keras.layers.UpSampling2D((2, 2))(X)
-    cX= tf.concat([X, X_skip], -1)
+    X = tf.concat([X, X_skip], -1)
     return X
 
 
@@ -49,11 +49,12 @@ class ResUNet:
         self.depth = 3
         self.width = width
         self.height = height
+        self.num_classes = classes
         if depth:
             self.depth += 1
         with self.graph.as_default():
             self.X = tf.placeholder(tf.float32, (None, self.height, self.width, self.depth))
-            self.labels = tf.placeholder(tf.float32, (None, self.height, self.width, 1))
+            self.labels = tf.placeholder(tf.int32, (None, self.height, self.width))
         self.training = True
         self.predictions, self.cost, self.loss, self.train_op, self.init, self.optimizer = self.make_graph(learning_rate)
 
@@ -63,59 +64,32 @@ class ResUNet:
 
             # Residual unit encoding
             # 64 depth
-            with tf.name_scope("enc1"):
-                X1 = res_unit(64, self.depth, self.X, first_layer=True, stride=1)
+            X1 = res_unit(64, self.depth, self.X, first_layer=True, stride=1, name="Enc1")
             # 1/2 size, 128 depth
-            with tf.name_scope("enc2"):
-                X2 = res_unit(128, 64, X1)
+            X2 = res_unit(128, 64, X1, name="Enc2")
             # 1/4 size, 256 depth
-            with tf.name_scope("enc3"):
-                X3 = res_unit(256, 128, X2)
+            X3 = res_unit(256, 128, X2, name="Enc3")
 
             # Bridge
             # 1/8 size, 512 depth
-            with tf.name_scope("bridge"):
-                X_bridge = res_unit(512, 256, X3)
+            X_bridge = res_unit(512, 256, X3, name="Bridge")
 
             # Decode
-            with tf.name_scope("dec1"):
-                # (512 + 256) input depth
-                X_D3 = upsample(X_bridge, X3)
-                # 1/4 size, 256 depth
-                X_D3 = res_unit(256, (512 + 256), X_D3, stride=1)
-            with tf.name_scope("dec2"):
-                # (256 + 128) input depth
-                X_D2 = upsample(X_D3, X2)
-                # 1/2 size, 128 depth
-                X_D2 = res_unit(128, (256 + 128), X_D2, stride=1)
-            with tf.name_scope("dec3"):
-                # (128 + 64) input depth
-                X_D1 = upsample(X_D2, X1)
-                # 64 depth
-                X_D1 = res_unit(64, (128 + 64), X_D1, stride=1)
+            # (512 + 256) input depth
+            X_D3 = upsample(X_bridge, X3)
+            # 1/4 size, 256 depth
+            X_D3 = res_unit(256, (512 + 256), X_D3, stride=1, name="Dec1")
+            # (256 + 128) input depth
+            X_D2 = upsample(X_D3, X2)
+            # 1/2 size, 128 depth
+            X_D2 = res_unit(128, (256 + 128), X_D2, stride=1, name="Dec2")
+            # (128 + 64) input depth
+            X_D1 = upsample(X_D2, X1)
+            # 64 depth
+            X_D1 = res_unit(64, (128 + 64), X_D1, stride=1, name="Dec3")
 
-
-            with tf.name_scope("fcn1"):
-                W1 = tf.get_variable('W1', shape=(9216, 4096), initializer=tf.keras.initializers.glorot_normal())
-                b1 = tf.Variable(tf.zeros((4096,)), trainable=True)
-                X6 = tf.matmul(X5, W1) + b1
-                X6 = tf.layers.batch_normalization(X6)
-                X6 = tf.nn.leaky_relu(X6)
-            with tf.name_scope("fcn2"):
-                W2 = tf.get_variable('W2', shape=(4096, 4096), initializer=tf.keras.initializers.glorot_normal())
-                b2 = tf.Variable(tf.zeros((4096,)), trainable=True)
-                X7 = tf.matmul(X6, W2) + b2
-                X7 = tf.layers.batch_normalization(X7)
-                X7 = tf.nn.leaky_relu(X7)
-            with tf.name_scope("softmax"):
-                W3 = tf.get_variable('W3', shape=(4096, 10), initializer=tf.keras.initializers.glorot_normal())
-                b3 = tf.Variable(tf.zeros((10,)), trainable=True)
-                X8 = tf.add(tf.matmul(X7, W3), b3)
-                if self.training:
-                    X8 = tf.nn.dropout(X8, rate=0.2)
-
-            predictions = tf.nn.softmax(X8)
-
+            # Make pixel-wise predictions
+            predictions = convolve(X_D1, 64, self.num_classes, 1, "Predictions", size=1)
             cost = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=predictions, labels=self.labels)
             loss = tf.reduce_mean(cost)
 
@@ -125,4 +99,12 @@ class ResUNet:
         return predictions, cost, loss, train_op, init, optimizer
 
     def get_size(self):
-        return 227, 227, 3
+        if self.depth:
+            return self.width, self.height, 4
+        else:
+            return self.width, self.height, 3
+
+
+if __name__ == "__main__":
+    model = ResUNet()
+    print(model.predictions.shape)
