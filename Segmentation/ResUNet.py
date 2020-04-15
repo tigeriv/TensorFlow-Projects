@@ -43,7 +43,7 @@ def upsample(X, X_skip):
 
 
 class ResUNet:
-    def __init__(self, learning_rate=0.007, depth=False, width=1920, height=1080, classes=20):
+    def __init__(self, learning_rate=0.007, depth=False, width=1920, height=1080, classes=33):
         tf.reset_default_graph()
         self.graph = tf.Graph()
         self.depth = 3
@@ -56,7 +56,7 @@ class ResUNet:
             self.X = tf.placeholder(tf.float32, (None, self.height, self.width, self.depth))
             self.labels = tf.placeholder(tf.int32, (None, self.height, self.width))
         self.training = True
-        self.predictions, self.cost, self.loss, self.train_op, self.init, self.optimizer = self.make_graph(learning_rate)
+        self.predictions, self.cost, self.loss, self.train_op, self.init, self.optimizer, self.saver = self.make_graph(learning_rate)
 
     def make_graph(self, learning_rate):
         with self.graph.as_default():
@@ -96,7 +96,8 @@ class ResUNet:
             optimizer = tf.train.MomentumOptimizer(learning_rate, 0.9)
             train_op = optimizer.minimize(loss)
             init = tf.global_variables_initializer()
-        return predictions, cost, loss, train_op, init, optimizer
+            saver = tf.train.Saver()
+        return predictions, cost, loss, train_op, init, optimizer, saver
 
     def get_size(self):
         if self.depth:

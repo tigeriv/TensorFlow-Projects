@@ -212,17 +212,18 @@ graph = tf.Graph()
 
 learning_rate = 0.007
 NUM_FEATURES = train_x.shape[1]
+NUM_LAYERS = 10
 
 with graph.as_default():
     X = tf.placeholder(tf.float32, (None, NUM_FEATURES))
     labels = tf.placeholder(tf.float32, (None, 2))
     X_es = [X]
-    for i in range(10):
+    for i in range(NUM_LAYERS):
         num_in = 150
         num_out = 150
         if i == 0:
             num_in = NUM_FEATURES
-        if i == 9:
+        if i == NUM_LAYERS-1:
             num_out = 2
         X_es.append(fcn(num_in, num_out, X_es[-1], "fcn" + str(i)))
     predictions = X_es[-1]
