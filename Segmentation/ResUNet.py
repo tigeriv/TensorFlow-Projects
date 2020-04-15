@@ -1,7 +1,7 @@
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-layer_sizes = [16, 32, 64, 128]
+layer_sizes = [8, 16, 32, 64]
 
 
 def bn_relu(X):

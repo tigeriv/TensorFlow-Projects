@@ -13,7 +13,7 @@ DEBUG = False
 restore = False
 save = True
 load_path = "./pretrained/model.ckpt"
-batch_size = 1
+batch_size = 2
 test_size = 0.01
 LEARNING_RATE = 0.07
 
@@ -55,11 +55,11 @@ if __name__ == "__main__":
             # Mini batches
             while not data.EndOfData:
                 batch_x, batch_y = data.get_batch(batch_size)
+                feed_dict = {model.X: batch_x, model.labels: batch_y}
 
                 if DEBUG:
-                    debug_grads(sess, feed_dict)
+                    debug_grads(sess, model, feed_dict)
 
-                feed_dict = {model.X: batch_x, model.labels: batch_y}
                 start = time.time()
                 outs = sess.run([model.predictions], feed_dict=feed_dict)
                 end = time.time()
