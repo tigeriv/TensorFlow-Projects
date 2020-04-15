@@ -3,6 +3,7 @@ from ResUNet import ResUNet
 from tensorflow.python.ops import variables
 from tensorflow.python.framework import ops
 import numpy as np
+import time
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
@@ -60,8 +61,16 @@ if __name__ == "__main__":
                     debug_grads(sess, feed_dict)
 
                 feed_dict = {model.X: batch_x, model.labels: batch_y}
+                start = time.time()
+                outs = sess.run([model.predictions], feed_dict=feed_dict)
+                end = time.time()
+                print("Prediction", end - start)
+
+                start = time.time()
                 _, loss_val, outs = sess.run([model.train_op, model.loss, model.predictions], feed_dict=feed_dict)
                 avg_loss += loss_val
+                end = time.time()
+                print("Loss and update time", loss_val, end-start)
 
             cv_x, cv_y = data.get_val_data()
             feed_dict = {model.X: cv_x, model.labels: cv_y}

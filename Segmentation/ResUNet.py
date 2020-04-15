@@ -43,7 +43,7 @@ def upsample(X, X_skip):
 
 
 class ResUNet:
-    def __init__(self, learning_rate=0.007, depth=False, width=1920, height=1080, classes=33):
+    def __init__(self, learning_rate=0.007, depth=False, width=1920, height=1080, classes=34):
         tf.reset_default_graph()
         self.graph = tf.Graph()
         self.depth = 3
