@@ -1,7 +1,9 @@
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
+# Parameters to adjust size
 layer_sizes = [8, 16, 32, 64]
+num_res = 2
 
 
 def bn_relu(X):
@@ -67,27 +69,29 @@ class ResUNet:
             # Residual unit encoding
             # 64 depth
             X1 = res_unit(layer_sizes[0], self.depth, self.X, first_layer=True, stride=1, name="Enc1")
-            # 1/2 size, 128 depth
+            # 1/2 size
             X2 = res_unit(layer_sizes[1], layer_sizes[0], X1, name="Enc2")
-            # 1/4 size, 256 depth
-            X3 = res_unit(layer_sizes[2], layer_sizes[1], X2, name="Enc3")
+            X3 = X2
+            # 1/4 size
+            if num_res == 3:
+                X3 = res_unit(layer_sizes[2], layer_sizes[1], X2, name="Enc3")
 
             # Bridge
-            # 1/8 size, 512 depth
-            X_bridge = res_unit(layer_sizes[3], layer_sizes[2], X3, name="Bridge")
+            # 1/8 size
+            X_bridge = res_unit(layer_sizes[num_res], layer_sizes[num_res-1], X3, name="Bridge")
 
             # Decode
-            # (512 + 256) input depth
-            X_D3 = upsample(X_bridge, X3)
-            # 1/4 size, 256 depth
-            X_D3 = res_unit(layer_sizes[2], (layer_sizes[2] + layer_sizes[3]), X_D3, stride=1, name="Dec1")
-            # (256 + 128) input depth
+            if num_res == 3:
+                X_D3 = upsample(X_bridge, X3)
+                X_D3 = res_unit(layer_sizes[2], (layer_sizes[2] + layer_sizes[3]), X_D3, stride=1, name="Dec1")
+            else:
+                X_D3 = X_bridge
+
             X_D2 = upsample(X_D3, X2)
-            # 1/2 size, 128 depth
+            # 1/2 size
             X_D2 = res_unit(layer_sizes[1], (layer_sizes[1] + layer_sizes[2]), X_D2, stride=1, name="Dec2")
-            # (128 + 64) input depth
+            # Full size
             X_D1 = upsample(X_D2, X1)
-            # 64 depth
             X_D1 = res_unit(layer_sizes[0], (layer_sizes[0] + layer_sizes[1]), X_D1, stride=1, name="Dec3")
 
             # Make pixel-wise predictions
