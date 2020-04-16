@@ -117,9 +117,11 @@ class CityScapes:
         batch_y = np.asarray([id_to_cat(imageio.imread(label_extension(file))) for file in batch_files])
         return batch_x, batch_y
 
-    def get_val_data(self):
-        val_x = np.asarray([imageio.imread(data_extension(file)) for file in self.val_files])
-        val_y = np.asarray([id_to_cat(imageio.imread(label_extension(file))) for file in self.val_files])
+    def get_val_data(self, batch_size=2):
+        np.random.shuffle(self.val_files)
+        val_batch = self.val_files[:batch_size]
+        val_x = np.asarray([imageio.imread(data_extension(file, train=False)) for file in val_batch])
+        val_y = np.asarray([id_to_cat(imageio.imread(label_extension(file, train=False))) for file in val_batch])
         return val_x, val_y
 
     def reset_pos(self):

@@ -7,15 +7,21 @@ import time
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
+
+# Training settings
 NUM_EPOCHS = 100
-save_freq = 10
-DEBUG = False
+save_freq = 1
 restore = False
 save = True
 load_path = "./pretrained/model.ckpt"
-batch_size = 2
+batch_size = 8
 test_size = 0.01
 LEARNING_RATE = 0.07
+
+
+# Debugging settings
+DEBUG = False
+TIME_PREDICTION = False
 
 
 def debug_grads(sess, model, feed_dict):
@@ -60,18 +66,19 @@ if __name__ == "__main__":
                 if DEBUG:
                     debug_grads(sess, model, feed_dict)
 
-                start = time.time()
-                outs = sess.run([model.predictions], feed_dict=feed_dict)
-                end = time.time()
-                print("Prediction", end - start)
+                if TIME_PREDICTION:
+                    start = time.time()
+                    outs = sess.run([model.predictions], feed_dict=feed_dict)
+                    end = time.time()
+                    print("Prediction", end - start)
 
                 start = time.time()
                 _, loss_val, outs = sess.run([model.train_op, model.loss, model.predictions], feed_dict=feed_dict)
                 avg_loss += loss_val
                 end = time.time()
-                print("Loss and update time", loss_val, end-start)
 
-            cv_x, cv_y = data.get_val_data()
+            cv_x, cv_y = data.get_val_data(batch_size)
+            # Make it a smaller amount of data so we don't crash :)
             feed_dict = {model.X: cv_x, model.labels: cv_y}
             cv_loss = sess.run([model.loss], feed_dict=feed_dict)[0]
             print(epoch, "Train Loss", avg_loss, "CV Loss", cv_loss)
