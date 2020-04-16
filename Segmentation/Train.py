@@ -1,5 +1,6 @@
 from LoadCity import CityScapes
 from ResUNet import ResUNet
+from FastSCNN import FSCNN
 from tensorflow.python.ops import variables
 from tensorflow.python.framework import ops
 import numpy as np
@@ -14,7 +15,7 @@ save_freq = 1
 restore = False
 save = True
 load_path = "./pretrained/model.ckpt"
-batch_size = 8
+batch_size = 2
 test_size = 0.01
 LEARNING_RATE = 0.07
 
@@ -22,6 +23,7 @@ LEARNING_RATE = 0.07
 # Debugging settings
 DEBUG = False
 TIME_PREDICTION = False
+TIME_INTERVAL = True
 
 
 def debug_grads(sess, model, feed_dict):
@@ -44,7 +46,7 @@ def debug_grads(sess, model, feed_dict):
 
 
 if __name__ == "__main__":
-    model = ResUNet(LEARNING_RATE, width=2048, height=1024)
+    model = FSCNN(LEARNING_RATE, width=2048, height=1024)
     data = CityScapes()
 
     with tf.Session(graph=model.graph) as sess:
@@ -54,6 +56,8 @@ if __name__ == "__main__":
         else:
             model.init.run()
 
+        iteration = 0
+        start = time.time()
         for epoch in range(NUM_EPOCHS):
             data.shuffle_data()
             avg_loss = 0
@@ -72,10 +76,13 @@ if __name__ == "__main__":
                     end = time.time()
                     print("Prediction", end - start)
 
-                start = time.time()
                 _, loss_val, outs = sess.run([model.train_op, model.loss, model.predictions], feed_dict=feed_dict)
                 avg_loss += loss_val
                 end = time.time()
+                iteration += 1
+                if iteration % 100 == 0 and TIME_INTERVAL:
+                    print("Iteration", iteration, " took", end-start, " seconds")
+                    start = time.time()
 
             cv_x, cv_y = data.get_val_data(batch_size)
             # Make it a smaller amount of data so we don't crash :)
