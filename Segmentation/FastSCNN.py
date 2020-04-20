@@ -1,4 +1,5 @@
 import tensorflow.compat.v1 as tf
+import numpy as np
 tf.disable_v2_behavior()
 
 
@@ -84,8 +85,8 @@ class FSCNN:
         if depth:
             self.depth += 1
         with self.graph.as_default():
-            self.X = tf.placeholder(tf.float32, (None, self.height, self.width, self.depth))
-            self.labels = tf.placeholder(tf.int32, (None, self.height, self.width))
+            self.X = tf.placeholder(tf.float32, (None, None, None, self.depth))
+            self.labels = tf.placeholder(tf.int32, (None, None, None))
         self.training = True
         self.predictions, self.cost, self.loss, self.train_op, self.init, self.optimizer, self.saver = self.make_graph(learning_rate)
 
@@ -111,8 +112,8 @@ class FSCNN:
             X_deep = bottleneck(X_deep, 64, 6, 96, 2, "BN2")
             # Bottleneck 3
             X_deep = bottleneck(X_deep, 96, 6, 128, 1, "BN3")
-            # PPM
-            X_deep = PPM(X_deep, [2, 4, 6, 8], self.width//32, self.height//32, 128)
+            # PPM (skip this to allow variable sized input)
+            # X_deep = PPM(X_deep, [2, 4, 6, 8], self.width//32, self.height//32, 128)
             # FFM
             X = FFM(X_deep, X, 4)
 
@@ -133,12 +134,6 @@ class FSCNN:
             init = tf.global_variables_initializer()
             saver = tf.train.Saver()
         return predictions, cost, loss, train_op, init, optimizer, saver
-
-    def get_size(self):
-        if self.depth:
-            return self.width, self.height, 4
-        else:
-            return self.width, self.height, 3
 
 
 if __name__ == "__main__":

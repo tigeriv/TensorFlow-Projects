@@ -1,4 +1,5 @@
 from LoadCity import CityScapes
+from LoadCity import *
 from ResUNet import ResUNet
 from FastSCNN import FSCNN
 from tensorflow.python.ops import variables
@@ -46,7 +47,7 @@ def debug_grads(sess, model, feed_dict):
 
 
 if __name__ == "__main__":
-    model = ResUNet(LEARNING_RATE, width=2048, height=1024)
+    model = FSCNN(LEARNING_RATE, width=2048, height=1024)
     data = CityScapes()
 
     with tf.Session(graph=model.graph) as sess:
@@ -65,6 +66,9 @@ if __name__ == "__main__":
             # Mini batches
             while not data.EndOfData:
                 batch_x, batch_y = data.get_batch(batch_size)
+                batch_x, batch_y = augment_batch(batch_x, batch_y)
+                model.width = batch_x.shape[2]
+                model.height = batch_x.shape[1]
                 feed_dict = {model.X: batch_x, model.labels: batch_y}
 
                 if DEBUG:
