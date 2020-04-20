@@ -23,7 +23,7 @@ LEARNING_RATE = 0.07
 
 # Debugging settings
 DEBUG = False
-TIME_PREDICTION = False
+TIME_PREDICTION = True
 TIME_INTERVAL = True
 
 
@@ -47,7 +47,7 @@ def debug_grads(sess, model, feed_dict):
 
 
 if __name__ == "__main__":
-    model = FSCNN(LEARNING_RATE, width=2048, height=1024)
+    model = ResUNet(LEARNING_RATE, width=2048, height=1024)
     data = CityScapes()
 
     with tf.Session(graph=model.graph) as sess:

@@ -1,9 +1,9 @@
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-# Parameters to adjust size
-layer_sizes = [8, 16, 32, 64]
-num_res = 2
+# Parameters to adjust size (num_res is either 2 or 3)
+layer_sizes = [16, 32, 64, 128]
+num_res = 3
 
 
 def bn_relu(X):
@@ -57,8 +57,8 @@ class ResUNet:
         if depth:
             self.depth += 1
         with self.graph.as_default():
-            self.X = tf.placeholder(tf.float32, (None, self.height, self.width, self.depth))
-            self.labels = tf.placeholder(tf.int32, (None, self.height, self.width))
+            self.X = tf.placeholder(tf.float32, (None, None, None, self.depth))
+            self.labels = tf.placeholder(tf.int32, (None, None, None))
         self.training = True
         self.predictions, self.cost, self.loss, self.train_op, self.init, self.optimizer, self.saver = self.make_graph(learning_rate)
 
