@@ -107,16 +107,22 @@ def instance_extension(file, train=True):
         return './gtFine_trainvaltest/gtFine/val/' + file + '_gtFine_instanceIds.png'
 
 
-# Augment batch size by a scale factor
+# Augment batch size by a scale factor and possibly flip image
 def augment_batch(batch_x, batch_y, x_scale=None, y_scale=None):
+    # Scale
     if x_scale is None or y_scale is None:
-        x_scale = random.choice([1/4, 1/2, 1])
-        y_scale = random.choice([1/4, 1/2, 1])
+        x_scale = random.choice([1/8, 1/4, 1/2])
+        y_scale = x_scale
     augmented_x = []
     augmented_y = []
     for index in range(len(batch_x)):
         augmented_x.append(cv2.resize(batch_x[index], (0, 0), fx=x_scale, fy=y_scale, interpolation=cv2.INTER_NEAREST))
         augmented_y.append(cv2.resize(batch_y[index], (0, 0), fx=x_scale, fy=y_scale, interpolation=cv2.INTER_NEAREST))
+        # Flip
+        if random.choice([True, False]):
+
+            augmented_x[-1] = np.fliplr(augmented_x[-1])
+            augmented_y[-1] = np.fliplr(augmented_y[-1])
     return np.asarray(augmented_x), np.asarray(augmented_y)
 
 

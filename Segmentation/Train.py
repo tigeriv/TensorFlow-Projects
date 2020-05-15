@@ -15,15 +15,16 @@ NUM_EPOCHS = 100
 save_freq = 1
 restore = False
 save = True
-load_path = "./pretrained/model.ckpt"
+load_path = "./tmp/model2.ckpt"
 batch_size = 2
 test_size = 0.01
-LEARNING_RATE = 0.07
+LEARNING_RATE = 0.007
+UPDATE_FREQ = 50
 
 
 # Debugging settings
 DEBUG = False
-TIME_PREDICTION = True
+TIME_PREDICTION = False
 TIME_INTERVAL = True
 
 
@@ -47,17 +48,17 @@ def debug_grads(sess, model, feed_dict):
 
 
 if __name__ == "__main__":
-    model = ResUNet(LEARNING_RATE, width=2048, height=1024)
+    model = FSCNN(LEARNING_RATE, width=2048, height=1024)
     data = CityScapes()
 
     with tf.Session(graph=model.graph) as sess:
         if restore:
             model.saver.restore(sess, load_path)
-            NUM_EPOCHS = 0
         else:
             model.init.run()
 
         iteration = 0
+        interval_loss = 0
         start = time.time()
         for epoch in range(NUM_EPOCHS):
             data.shuffle_data()
@@ -82,11 +83,14 @@ if __name__ == "__main__":
 
                 _, loss_val, outs = sess.run([model.train_op, model.loss, model.predictions], feed_dict=feed_dict)
                 avg_loss += loss_val
+                interval_loss += loss_val
                 end = time.time()
                 iteration += 1
-                if iteration % 100 == 0 and TIME_INTERVAL:
-                    print("Iteration", iteration, " took", end-start, " seconds")
+
+                if iteration % UPDATE_FREQ == 0 and TIME_INTERVAL:
+                    print("Iteration", iteration, " took", end-start, " seconds, error for this chunk: ", interval_loss / (UPDATE_FREQ * batch_size))
                     start = time.time()
+                    interval_loss = 0
 
             cv_x, cv_y = data.get_val_data(batch_size)
             # Make it a smaller amount of data so we don't crash :)

@@ -12,7 +12,7 @@ tf.disable_v2_behavior()
 import matplotlib.pyplot as plt
 
 
-load_path = "./tmp/model2.ckpt"
+load_path = "./tmp/model75.ckpt"
 
 
 def load_sess(path, model):
@@ -41,7 +41,7 @@ def display_label_image(image):
 
 
 if __name__ == "__main__":
-    model = ResUNet(width=2048, height=1024)
+    model = FSCNN(width=2048, height=1024)
     data = CityScapes()
     sess = load_sess(load_path, model)
     while True:
@@ -50,4 +50,5 @@ if __name__ == "__main__":
         for index in range(len(val_labels)):
             display_image(val_x[index])
             cat_image = np.argmax(val_labels[index], axis=-1)
+            cat_image[cat_image > 4] = 0
             display_label_image(cat_image)
